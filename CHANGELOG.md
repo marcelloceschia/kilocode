@@ -1,5 +1,15 @@
 # kilo-code
 
+## 5.2.90
+
+### Patch Changes
+
+- Enhanced Bedrock provider with full support for AWS inference profiles (application-inference-profile and inference-profile ARNs)
+- Added automatic model resolution to detect underlying model capabilities (prompt caching, extended context, reasoning budgets)
+- Improved settings UI with real-time ARN resolution feedback
+- Fixed prompt caching not being enabled for inference profile ARNs
+- Added @aws-sdk/client-bedrock dependency for inference profile resolution
+
 ## 5.2.2
 
 ### Patch Changes
