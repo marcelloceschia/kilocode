@@ -251,12 +251,16 @@ export class AwsBedrockHandler extends BaseProvider implements SingleCompletionH
 			// kilocode_change start: Attempt to resolve inference profile ARN asynchronously
 			// For application-inference-profile and inference-profile ARNs, we should resolve to get the underlying model
 			// This is done asynchronously and won't block the constructor, but will be available for subsequent requests
+			// Note: Intentional fire-and-forget - we don't await this as it should not block constructor initialization
 			if (
 				this.options.awsCustomArn &&
 				(this.options.awsCustomArn.includes(":application-inference-profile/") ||
 					this.options.awsCustomArn.includes(":inference-profile/"))
 			) {
-				this.resolveInferenceProfileAsync(this.options.awsCustomArn)
+				this.resolveInferenceProfileAsync(this.options.awsCustomArn).catch(() => {
+					// Errors are already logged within resolveInferenceProfileAsync
+					// This catch ensures unhandled promise rejection is avoided
+				})
 			}
 			// kilocode_change end
 		}
@@ -1176,8 +1180,9 @@ export class AwsBedrockHandler extends BaseProvider implements SingleCompletionH
 
 		if ((this._costModelConfig?.id?.trim().length ?? 0) > 0) {
 			// Apply 1M context tier pricing if enabled
-			let modelInfo = this.costModelConfig.info
-			const baseModelId = this.parseBaseModelId(this.costModelConfig.id)
+			// Use _costModelConfig directly to avoid infinite recursion through the getter
+			let modelInfo = this._costModelConfig.info
+			const baseModelId = this.parseBaseModelId(this._costModelConfig.id)
 			if (BEDROCK_1M_CONTEXT_MODEL_IDS.includes(baseModelId as any) && this.options.awsBedrock1MContext) {
 				modelInfo = applyBedrock1MTierPricing(baseModelId, modelInfo)
 			}
@@ -1185,12 +1190,12 @@ export class AwsBedrockHandler extends BaseProvider implements SingleCompletionH
 			// Get model params for cost model config
 			const params = getModelParams({
 				format: "anthropic",
-				modelId: this.costModelConfig.id,
+				modelId: this._costModelConfig.id,
 				model: modelInfo,
 				settings: this.options,
 				defaultTemperature: BEDROCK_DEFAULT_TEMPERATURE,
 			})
-			return { ...this.costModelConfig, info: modelInfo, ...params }
+			return { ...this._costModelConfig, info: modelInfo, ...params }
 		}
 
 		let modelConfig = undefined

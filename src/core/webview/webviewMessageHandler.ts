@@ -5,6 +5,7 @@ import * as fs from "fs/promises"
 import { getRooDirectoriesForCwd } from "../../services/roo-config/index.js"
 import pWaitFor from "p-wait-for"
 import * as vscode from "vscode"
+import { logger } from "../../utils/logging"
 // kilocode_change start
 import axios from "axios"
 import { fastApplyApiProviderSchema, getKiloUrlFromToken, isGlobalStateKey } from "@roo-code/types"
@@ -1346,7 +1347,7 @@ export const webviewMessageHandler = async (
 						})
 					}
 				} catch (error) {
-					console.error("Bedrock inference profile resolution failed:", error)
+					logger.error("Bedrock inference profile resolution failed:", error)
 					provider.postMessageToWebview({
 						type: "bedrockInferenceProfileResolved",
 						error: error instanceof Error ? error.message : "Unknown error occurred",

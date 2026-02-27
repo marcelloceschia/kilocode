@@ -24,7 +24,7 @@ export const BedrockCustomArn = ({
 
 	// kilocode_change start: State for inference profile resolution
 	const [isResolving, setIsResolving] = useState(false)
-	const [resolvedModelId, setResolvedModelId] = useState<string | null>(null)
+	const [bedrockInferenceModelId, setBedrockInferenceModelId] = useState<string | null>(null)
 	const [resolutionError, setResolutionError] = useState<string | null>(null)
 	const [isHoveringRefresh, setIsHoveringRefresh] = useState(false)
 	// kilocode_change end
@@ -54,7 +54,7 @@ export const BedrockCustomArn = ({
 			if (message.type === "bedrockInferenceProfileResolved") {
 				setIsResolving(false)
 				if (message.bedrockInferenceModelId) {
-					setResolvedModelId(message.bedrockInferenceModelId)
+					setBedrockInferenceModelId(message.bedrockInferenceModelId)
 					setResolutionError(null)
 					// Notify parent component about resolved model
 					if (onResolvedModelInfo) {
@@ -62,7 +62,7 @@ export const BedrockCustomArn = ({
 					}
 				} else if (message.error) {
 					setResolutionError(message.error)
-					setResolvedModelId(null)
+					setBedrockInferenceModelId(null)
 					// Clear resolved model info on error
 					if (onResolvedModelInfo) {
 						onResolvedModelInfo(null)
@@ -80,7 +80,7 @@ export const BedrockCustomArn = ({
 		const awsCustomArn = apiConfiguration.awsCustomArn
 
 		// Clear previous resolution state when ARN changes
-		setResolvedModelId(null)
+		setBedrockInferenceModelId(null)
 		setResolutionError(null)
 
 		// Clear resolved model info in parent
@@ -96,7 +96,7 @@ export const BedrockCustomArn = ({
 		) {
 			handleResolveArn()
 		}
-	}, [apiConfiguration.awsCustomArn, validation.isValid, onResolvedModelInfo, handleResolveArn])
+	}, [apiConfiguration, validation.isValid, onResolvedModelInfo, handleResolveArn])
 	// kilocode_change end
 
 	return (
@@ -155,11 +155,11 @@ export const BedrockCustomArn = ({
 								{t("settings:providers.awsInferenceProfileResolving")}
 							</span>
 						)}
-						{!isResolving && resolvedModelId && (
+						{!isResolving && bedrockInferenceModelId && (
 							<span className="text-xs text-vscode-descriptionForeground">
 								{t("settings:providers.awsInferenceProfileUnderlyingModel")}
 								<span className="font-mono text-vscode-textPreformat-foreground ml-1">
-									{resolvedModelId}
+									{bedrockInferenceModelId}
 								</span>
 							</span>
 						)}
@@ -169,7 +169,7 @@ export const BedrockCustomArn = ({
 								{resolutionError}
 							</span>
 						)}
-						{!isResolving && !resolvedModelId && !resolutionError && isHoveringRefresh && (
+						{!isResolving && !bedrockInferenceModelId && !resolutionError && isHoveringRefresh && (
 							<span className="text-xs text-vscode-descriptionForeground">
 								{t("settings:providers.awsInferenceProfileResolve")}
 							</span>

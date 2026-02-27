@@ -616,17 +616,8 @@ function getSelectedModel({
 				apiConfiguration.anthropicBeta1MContext &&
 				baseInfo
 			) {
-				// Type assertion since supported Claude 4 models include 1M context pricing tiers.
-				const modelWithTiers = baseInfo as typeof baseInfo & {
-					tiers?: Array<{
-						contextWindow: number
-						inputPrice?: number
-						outputPrice?: number
-						cacheWritesPrice?: number
-						cacheReadsPrice?: number
-					}>
-				}
-				const tier = modelWithTiers.tiers?.[0]
+				// tiers is already defined on ModelInfo, no type assertion needed
+				const tier = baseInfo.tiers?.[0]
 				if (tier) {
 					// Create a new ModelInfo object with updated values
 					const info: ModelInfo = {
