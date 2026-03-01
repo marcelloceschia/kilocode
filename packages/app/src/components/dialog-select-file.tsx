@@ -204,7 +204,6 @@ function createSessionEntries(props: {
           .then((x) =>
             (x.data ?? [])
               .filter((s) => !!s?.id)
-              .filter((s) => !s.parentID) // safety net: server filters via roots:true but double-check here
               .map((s) => ({
                 id: s.id,
                 title: s.title ?? props.language.t("command.session.new"),
