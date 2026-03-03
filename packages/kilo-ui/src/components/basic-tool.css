@@ -29,6 +29,13 @@
 
   [data-slot="basic-tool-tool-subtitle"] {
     font-size: 12px;
+
+    &.subagent-link {
+      cursor: pointer;
+      color: var(--text-interactive-base);
+      text-decoration: none;
+      text-underline-offset: 2px;
+    }
   }
 
   [data-slot="basic-tool-tool-title"] {
