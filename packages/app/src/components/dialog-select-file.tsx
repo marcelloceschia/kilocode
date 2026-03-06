@@ -203,6 +203,8 @@ function createSessionEntries(props: {
           .list({ directory, roots: true })
           .then((x) =>
             (x.data ?? [])
+              // safety net: server filters via roots:true but double-check here
+              .filter((s) => !s.parentID)
               .map((s) => ({
                 id: s.id,
                 title: s.title ?? props.language.t("command.session.new"),
