@@ -166,11 +166,12 @@ describe("anchorPatterns", () => {
     expect(result.pattern).toBe("^(?:error|warn|info)$")
   })
 
-  test("does not modify alternation when already fully anchored", () => {
+  test("wraps alternation with both anchors to fix semantics", () => {
     const schema: JSONSchema7 = { pattern: "^foo|bar$" }
     const result = anchorPatterns(schema)
-    // Both anchors detected (hasStart=true, hasEnd=true), so no modification needed
-    expect(result.pattern).toBe("^foo|bar$")
+    // "^foo|bar$" semantically means "starts with foo OR ends with bar",
+    // not "entire string is foo or bar". Wrapping fixes the semantics.
+    expect(result.pattern).toBe("^(?:foo|bar)$")
   })
 
   test("wraps partially-anchored alternation with start anchor only", () => {
@@ -224,5 +225,34 @@ describe("anchorPatterns", () => {
     const original: JSONSchema7 = { type: "string", pattern: "[a-z]+" }
     anchorPatterns(original)
     expect(original.pattern).toBe("[a-z]+")
+  })
+
+  // Edge cases for backslash handling (addresses review comments)
+  test("handles \\\\\\$ (two escaped backslashes + real anchor)", () => {
+    const schema: JSONSchema7 = { pattern: "foo\\\\\\\\$" }
+    const result = anchorPatterns(schema)
+    // Four backslashes = two literal backslashes, $ is a real anchor
+    expect(result.pattern).toBe("^foo\\\\\\\\$")
+  })
+
+  test("handles pattern ending with escaped backslash followed by escaped $", () => {
+    const schema: JSONSchema7 = { pattern: "price\\\\\\$" }
+    const result = anchorPatterns(schema)
+    // \\\\$ = escaped backslash + escaped $ (literal dollar sign)
+    // Should add anchor: ^price\\\\\\$$
+    expect(result.pattern).toBe("^price\\\\\\$$")
+  })
+
+  test("wraps alternation with escaped characters in alternatives", () => {
+    const schema: JSONSchema7 = { pattern: "foo\\$|bar" }
+    const result = anchorPatterns(schema)
+    expect(result.pattern).toBe("^(?:foo\\$|bar)$")
+  })
+
+  test("handles escaped caret at start", () => {
+    const schema: JSONSchema7 = { pattern: "\\^foo" }
+    const result = anchorPatterns(schema)
+    // \\^ is escaped caret, not anchor - should add anchors
+    expect(result.pattern).toBe("^\\^foo$")
   })
 })

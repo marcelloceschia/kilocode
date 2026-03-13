@@ -150,10 +150,14 @@ export namespace MCP {
       // Account for even-length backslash sequences (e.g. \\$ is a real anchor, \$ is not).
       const hasStart = /^\^/.test(result.pattern)
       const hasEnd = /(^|[^\\])(\\\\)*\$$/.test(result.pattern)
-      if (hasTopLevelAlternation(result.pattern) && (!hasStart || !hasEnd)) {
+      if (hasTopLevelAlternation(result.pattern)) {
         // Wrap in non-capturing group to preserve alternation semantics.
-        // Applies to unanchored ("foo|bar"), and partially-anchored ("^foo|bar", "foo|bar$")
-        // patterns — naively prepending/appending anchors would change regex semantics.
+        // Applies to all patterns with top-level alternation, including:
+        // - Unanchored: "foo|bar" → "^(?:foo|bar)$"
+        // - Partially-anchored: "^foo|bar" or "foo|bar$" → "^(?:foo|bar)$"
+        // - "Fully-anchored" but semantically wrong: "^foo|bar$" → "^(?:foo|bar)$"
+        // The last case is critical: "^foo|bar$" means "starts with foo OR ends with bar",
+        // not "entire string is foo or bar". Wrapping fixes the semantics.
         const inner = result.pattern.replace(/^\^/, "").replace(/(^|[^\\])(\\\\)*\$$/, "$1$2")
         result.pattern = "^(?:" + inner + ")$"
       } else {
