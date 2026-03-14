@@ -223,6 +223,37 @@ export namespace MCP {
       }
     }
 
+    // dependencies: object where values can be schemas or arrays of property names
+    // In JSON Schema Draft 4-7, dependencies can be either an array of strings or a schema
+    const deps = (result as any).dependencies
+    if (typeof deps === "object" && deps !== null) {
+      const out: Record<string, any> = {}
+      for (const [k, v] of Object.entries(deps)) {
+        // If value is an object (schema), traverse it; otherwise keep as-is (array)
+        if (typeof v === "object" && v !== null && !Array.isArray(v)) {
+          out[k] = anchorPatterns(v as JSONSchema7)
+        } else {
+          out[k] = v
+        }
+      }
+      ;(result as any).dependencies = out
+    }
+
+    // dependentSchemas: object where values are schemas (Draft 2020-12+)
+    const dependentSchemas = (result as any).dependentSchemas
+    if (typeof dependentSchemas === "object" && dependentSchemas !== null) {
+      const out: Record<string, JSONSchema7> = {}
+      for (const [k, v] of Object.entries(dependentSchemas)) {
+        out[k] = anchorPatterns(v as JSONSchema7)
+      }
+      ;(result as any).dependentSchemas = out
+    }
+
+    // propertyNames: schema that validates property names
+    if (typeof (result as any).propertyNames === "object" && (result as any).propertyNames !== null) {
+      ;(result as any).propertyNames = anchorPatterns((result as any).propertyNames as JSONSchema7)
+    }
+
     return result
   }
   // kilocode_change end

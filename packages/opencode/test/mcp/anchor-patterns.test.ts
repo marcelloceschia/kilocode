@@ -255,4 +255,65 @@ describe("anchorPatterns", () => {
     // \\^ is escaped caret, not anchor - should add anchors
     expect(result.pattern).toBe("^\\^foo$")
   })
+
+  // JSON Schema keyword: dependencies (values can be schemas or arrays)
+  test("recurses into dependencies with schema values", () => {
+    const schema: any = {
+      dependencies: {
+        creditCard: { properties: { billingAddress: { pattern: "[a-z]+" } } },
+      },
+    }
+    const result = anchorPatterns(schema) as any
+    expect(result.dependencies.creditCard.properties.billingAddress.pattern).toBe("^[a-z]+$")
+  })
+
+  test("preserves dependencies with array values (property names)", () => {
+    const schema: any = {
+      dependencies: {
+        creditCard: ["billingAddress", "billingName"],
+      },
+    }
+    const result = anchorPatterns(schema) as any
+    expect(result.dependencies.creditCard).toEqual(["billingAddress", "billingName"])
+  })
+
+  test("handles mixed dependencies (schema and array values)", () => {
+    const schema: any = {
+      dependencies: {
+        creditCard: ["billingAddress"],
+        billingAddress: { properties: { country: { pattern: "[A-Z]{2}" } } },
+      },
+    }
+    const result = anchorPatterns(schema) as any
+    expect(result.dependencies.creditCard).toEqual(["billingAddress"])
+    expect(result.dependencies.billingAddress.properties.country.pattern).toBe("^[A-Z]{2}$")
+  })
+
+  // JSON Schema keyword: dependentSchemas (values are always schemas)
+  test("recurses into dependentSchemas", () => {
+    const schema: any = {
+      dependentSchemas: {
+        creditCard: { properties: { billingAddress: { pattern: "[a-z]+" } } },
+      },
+    }
+    const result = anchorPatterns(schema) as any
+    expect(result.dependentSchemas.creditCard.properties.billingAddress.pattern).toBe("^[a-z]+$")
+  })
+
+  // JSON Schema keyword: propertyNames (validates property names)
+  test("recurses into propertyNames", () => {
+    const schema: any = {
+      propertyNames: { pattern: "^[a-z]+$" },
+    }
+    const result = anchorPatterns(schema) as any
+    expect(result.propertyNames.pattern).toBe("^[a-z]+$") // already anchored
+  })
+
+  test("anchors pattern in propertyNames", () => {
+    const schema: any = {
+      propertyNames: { pattern: "[a-z]+" },
+    }
+    const result = anchorPatterns(schema) as any
+    expect(result.propertyNames.pattern).toBe("^[a-z]+$")
+  })
 })
