@@ -150,10 +150,11 @@ export namespace MCP {
       // Account for even-length backslash sequences (e.g. \\$ is a real anchor, \$ is not).
       const hasStart = /^\^/.test(result.pattern)
       const hasEnd = /(^|[^\\])(\\\\)*\$$/.test(result.pattern)
-      if (hasTopLevelAlternation(result.pattern) && (!hasStart || !hasEnd)) {
+      if (hasTopLevelAlternation(result.pattern)) {
         // Wrap in non-capturing group to preserve alternation semantics.
-        // Applies to unanchored ("foo|bar"), and partially-anchored ("^foo|bar", "foo|bar$")
-        // patterns — naively prepending/appending anchors would change regex semantics.
+        // Applies to unanchored ("foo|bar"), partially-anchored ("^foo|bar", "foo|bar$"),
+        // and misleadingly-anchored ("^foo|bar$") patterns — naively prepending/appending
+        // anchors would change regex semantics.
         const inner = result.pattern.replace(/^\^/, "").replace(/(^|[^\\])(\\\\)*\$$/, "$1$2")
         result.pattern = "^(?:" + inner + ")$"
       } else {
@@ -217,6 +218,36 @@ export namespace MCP {
         }
         ;(result as any)[key] = out
       }
+    }
+
+    // JSON Schema draft-04/06: dependencies (can be schema or property array)
+    const deps = (result as any).dependencies
+    if (typeof deps === "object" && deps !== null) {
+      const out: Record<string, any> = {}
+      for (const [k, v] of Object.entries(deps)) {
+        // If dependency is a schema, recurse; if it's an array of property names, leave as-is
+        if (typeof v === "object" && v !== null && !Array.isArray(v)) {
+          out[k] = anchorPatterns(v as JSONSchema7)
+        } else {
+          out[k] = v
+        }
+      }
+      ;(result as any).dependencies = out
+    }
+
+    // JSON Schema draft-07: dependentSchemas
+    const depSchemas = (result as any).dependentSchemas
+    if (typeof depSchemas === "object" && depSchemas !== null) {
+      const out: Record<string, JSONSchema7> = {}
+      for (const [k, v] of Object.entries(depSchemas)) {
+        out[k] = anchorPatterns(v as JSONSchema7)
+      }
+      ;(result as any).dependentSchemas = out
+    }
+
+    // JSON Schema draft-06+: propertyNames
+    if (typeof (result as any).propertyNames === "object" && (result as any).propertyNames !== null) {
+      ;(result as any).propertyNames = anchorPatterns((result as any).propertyNames as JSONSchema7)
     }
 
     return result

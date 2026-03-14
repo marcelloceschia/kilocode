@@ -166,11 +166,12 @@ describe("anchorPatterns", () => {
     expect(result.pattern).toBe("^(?:error|warn|info)$")
   })
 
-  test("does not modify alternation when already fully anchored", () => {
+  test("wraps misleadingly-anchored alternation (^foo|bar$)", () => {
+    // ^foo|bar$ means "starts with foo OR ends with bar", NOT "foo or bar as entire string"
+    // We must wrap it to preserve semantics while ensuring proper anchoring
     const schema: JSONSchema7 = { pattern: "^foo|bar$" }
     const result = anchorPatterns(schema)
-    // Both anchors detected (hasStart=true, hasEnd=true), so no modification needed
-    expect(result.pattern).toBe("^foo|bar$")
+    expect(result.pattern).toBe("^(?:foo|bar)$")
   })
 
   test("wraps partially-anchored alternation with start anchor only", () => {
@@ -224,5 +225,56 @@ describe("anchorPatterns", () => {
     const original: JSONSchema7 = { type: "string", pattern: "[a-z]+" }
     anchorPatterns(original)
     expect(original.pattern).toBe("[a-z]+")
+  })
+
+  // JSON Schema keywords: dependencies, dependentSchemas, propertyNames
+  test("recurses into dependencies (schema form)", () => {
+    const schema: any = {
+      dependencies: {
+        foo: { pattern: "a+" },
+        bar: { pattern: "b+" },
+      },
+    }
+    const result = anchorPatterns(schema) as any
+    expect(result.dependencies.foo.pattern).toBe("^a+$")
+    expect(result.dependencies.bar.pattern).toBe("^b+$")
+  })
+
+  test("preserves dependencies (array form)", () => {
+    const schema: any = {
+      dependencies: {
+        foo: ["bar", "baz"],
+      },
+    }
+    const result = anchorPatterns(schema) as any
+    expect(result.dependencies.foo).toEqual(["bar", "baz"])
+  })
+
+  test("recurses into dependentSchemas", () => {
+    const schema: any = {
+      dependentSchemas: {
+        creditCard: { pattern: "\\d{4}" },
+        billingAddress: { pattern: "[a-z]+" },
+      },
+    }
+    const result = anchorPatterns(schema) as any
+    expect(result.dependentSchemas.creditCard.pattern).toBe("^\\d{4}$")
+    expect(result.dependentSchemas.billingAddress.pattern).toBe("^[a-z]+$")
+  })
+
+  test("recurses into propertyNames", () => {
+    const schema: any = {
+      propertyNames: { pattern: "^[a-z]+$" },
+    }
+    const result = anchorPatterns(schema) as any
+    expect(result.propertyNames.pattern).toBe("^[a-z]+$")
+  })
+
+  test("recurses into propertyNames with unanchored pattern", () => {
+    const schema: any = {
+      propertyNames: { pattern: "[a-z]+" },
+    }
+    const result = anchorPatterns(schema) as any
+    expect(result.propertyNames.pattern).toBe("^[a-z]+$")
   })
 })
