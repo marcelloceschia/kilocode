@@ -173,11 +173,56 @@ export namespace ProviderTransform {
     return msgs
   }
 
-  function applyCaching(msgs: ModelMessage[], model: Provider.Model): ModelMessage[] {
-    const system = msgs.filter((msg) => msg.role === "system").slice(0, 2)
-    const final = msgs.filter((msg) => msg.role !== "system").slice(-2)
+  // kilocode_change start - detect cache format from model configuration
+  function detectCacheFormat(model: Provider.Model): "anthropic" | "openrouter" | "bedrock" | "openaiCompatible" | undefined {
+    // Explicit format in model config takes precedence
+    if (model.caching && typeof model.caching === "object" && model.caching.format) {
+      return model.caching.format
+    }
 
-    const providerOptions = {
+    // Auto-detect based on npm package
+    const npm = model.api.npm
+    const providerID = model.providerID
+    const apiId = model.api.id.toLowerCase()
+
+    // Bedrock detection
+    if (npm === "@ai-sdk/amazon-bedrock" || providerID.includes("bedrock")) {
+      return "bedrock"
+    }
+
+    // Anthropic detection (including Vertex Anthropic)
+    if (npm === "@ai-sdk/anthropic" || npm === "@ai-sdk/google-vertex/anthropic" || providerID === "anthropic") {
+      return "anthropic"
+    }
+
+    // OpenRouter detection
+    if (npm === "@openrouter/ai-sdk-provider" || providerID === "openrouter") {
+      return "openrouter"
+    }
+
+    // Kilo Gateway detection (uses OpenRouter format for caching)
+    if (npm === "@kilocode/kilo-gateway" || providerID === "kilo") {
+      return "openrouter"
+    }
+
+    // Vercel AI Gateway - does NOT support prompt caching through providerOptions
+    // Gateway handles caching at the infrastructure level
+    if (npm === "@ai-sdk/gateway") {
+      return undefined
+    }
+
+    // Kiro gateway and other OpenAI-compatible providers with Claude
+    if (apiId.includes("claude") || apiId.includes("anthropic")) {
+      return "openrouter" // OpenAI-compatible APIs use openrouter format for Claude
+    }
+
+    return undefined
+  }
+
+  function getCacheOptions(_format: "anthropic" | "openrouter" | "bedrock" | "openaiCompatible"): Record<string, any> {
+    // Return all formats - the SDK will pick the right one based on the provider
+    // This matches the original behavior and ensures compatibility
+    return {
       anthropic: {
         cacheControl: { type: "ephemeral" },
       },
@@ -194,9 +239,79 @@ export namespace ProviderTransform {
         copilot_cache_control: { type: "ephemeral" },
       },
     }
+  }
 
-    for (const msg of unique([...system, ...final])) {
-      const useMessageLevelOptions = model.providerID === "anthropic" || model.providerID.includes("bedrock")
+  function shouldApplyCaching(model: Provider.Model): boolean {
+    // Explicit caching config
+    if (model.caching !== undefined) {
+      return model.caching === true || (typeof model.caching === "object")
+    }
+
+    // Auto-detect: cache for Anthropic/Claude models through any provider
+    const apiId = model.api.id.toLowerCase()
+    const npm = model.api.npm
+
+    // Always cache for native Anthropic and Bedrock
+    if (npm === "@ai-sdk/anthropic" || npm === "@ai-sdk/amazon-bedrock") {
+      return true
+    }
+
+    // Cache for Claude models through gateways (OpenRouter, Gateway, Kilo)
+    if (apiId.includes("claude") || apiId.includes("anthropic")) {
+      return true
+    }
+
+    return false
+  }
+  // kilocode_change end
+
+  function applyCaching(msgs: ModelMessage[], model: Provider.Model): ModelMessage[] {
+    // kilocode_change start - use generic caching configuration
+    if (!shouldApplyCaching(model)) {
+      return msgs
+    }
+
+    const format = detectCacheFormat(model)
+    if (!format) {
+      return msgs
+    }
+
+    // Determine positions to cache
+    let positions: ("system" | "first" | "last")[] = ["system", "last"]
+    if (model.caching && typeof model.caching === "object" && model.caching.positions) {
+      positions = model.caching.positions
+    }
+
+    const providerOptions = getCacheOptions(format)
+
+    // Select messages based on positions
+    const messagesToCache: ModelMessage[] = []
+    const systemMsgs = msgs.filter((msg) => msg.role === "system")
+    const nonSystemMsgs = msgs.filter((msg) => msg.role !== "system")
+
+    if (positions.includes("system")) {
+      messagesToCache.push(...systemMsgs.slice(0, 2))
+    }
+    if (positions.includes("first") && nonSystemMsgs.length > 0) {
+      messagesToCache.push(nonSystemMsgs[0])
+    }
+    if (positions.includes("last") && nonSystemMsgs.length > 0) {
+      const lastMsg = nonSystemMsgs[nonSystemMsgs.length - 1]
+      if (!messagesToCache.includes(lastMsg)) {
+        messagesToCache.push(lastMsg)
+      }
+    }
+
+    // Determine if we should use message-level or content-level options
+    // Anthropic and Bedrock use message-level, others use content-level
+    // Also check if provider is explicitly anthropic or bedrock (for backwards compatibility)
+    const useMessageLevelOptions =
+      format === "anthropic" ||
+      format === "bedrock" ||
+      model.providerID === "anthropic" ||
+      model.providerID.includes("bedrock")
+
+    for (const msg of unique(messagesToCache)) {
       const shouldUseContentOptions = !useMessageLevelOptions && Array.isArray(msg.content) && msg.content.length > 0
 
       if (shouldUseContentOptions) {
@@ -211,6 +326,7 @@ export namespace ProviderTransform {
     }
 
     return msgs
+    // kilocode_change end
   }
 
   function unsupportedParts(msgs: ModelMessage[], model: Provider.Model): ModelMessage[] {
@@ -285,17 +401,8 @@ export namespace ProviderTransform {
       fixDuplicateReasoning(msgs)
     }
 
-    if (
-      (model.providerID === "anthropic" ||
-        model.api.id.includes("anthropic") ||
-        model.api.id.includes("claude") ||
-        model.id.includes("anthropic") ||
-        model.id.includes("claude") ||
-        model.api.npm === "@ai-sdk/anthropic") &&
-      model.api.npm !== "@ai-sdk/gateway"
-    ) {
-      msgs = applyCaching(msgs, model)
-    }
+    // kilocode_change - apply caching based on model's caching configuration
+    msgs = applyCaching(msgs, model)
 
     // Remap providerOptions keys from stored providerID to expected SDK key
     const key = sdkKey(model.api.npm)

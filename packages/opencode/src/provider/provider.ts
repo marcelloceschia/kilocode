@@ -10,6 +10,7 @@ import { Plugin } from "../plugin"
 import {
   ModelsDev,
   Prompt, // kilocode_change
+  Caching, // kilocode_change
 } from "./models"
 import { NamedError } from "@opencode-ai/util/error"
 import { Auth } from "../auth"
@@ -670,6 +671,7 @@ export namespace Provider {
       // kilocode_change start
       recommendedIndex: z.number().optional(),
       prompt: Prompt.optional().catch(undefined),
+      caching: Caching.optional(),
       // kilocode_change end
     })
     .meta({
@@ -756,6 +758,7 @@ export namespace Provider {
       variants: provider.id === "kilo" ? (model.variants ?? {}) : {},
       recommendedIndex: model.recommendedIndex,
       prompt: model.prompt,
+      caching: model.caching,
       // kilocode_change end
     }
 
@@ -904,6 +907,7 @@ export namespace Provider {
           // kilocode_change start
           recommendedIndex: model.recommendedIndex ?? existingModel?.recommendedIndex,
           prompt: model.prompt ?? existingModel?.prompt,
+          caching: model.caching ?? existingModel?.caching,
           // kilocode_change end
         }
         const merged = mergeDeep(ProviderTransform.variants(parsedModel), model.variants ?? {})

@@ -30,6 +30,19 @@ const normalizeKiloBaseURL = (baseURL: string | undefined, orgId: string | undef
 }
 
 export const Prompt = z.enum(["codex", "gemini", "beast", "anthropic", "trinity", "anthropic_without_todo"])
+
+// Cache format types for prompt caching
+export const CacheFormat = z.enum(["anthropic", "openrouter", "bedrock", "openaiCompatible"])
+export type CacheFormat = z.infer<typeof CacheFormat>
+
+export const Caching = z.union([
+  z.boolean(),
+  z.object({
+    format: CacheFormat.optional(),
+    positions: z.array(z.enum(["system", "first", "last"])).optional(),
+  }),
+])
+export type Caching = z.infer<typeof Caching>
 // kilocode_change end
 
 export namespace ModelsDev {
@@ -86,6 +99,7 @@ export namespace ModelsDev {
     // kilocode_change start
     recommendedIndex: z.number().optional(),
     prompt: Prompt.optional().catch(undefined),
+    caching: Caching.optional(),
     // kilocode_change end
 
     experimental: z.boolean().optional(),
