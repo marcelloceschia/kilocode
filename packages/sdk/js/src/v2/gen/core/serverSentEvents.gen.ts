@@ -128,7 +128,17 @@ export const createSseClient = <TData = unknown>({
         const _fetch = options.fetch ?? globalThis.fetch
         const response = await _fetch(request)
 
-        if (!response.ok) throw new Error(`SSE failed: ${response.status} ${response.statusText}`)
+        // kilocode_change start - include response body in error for retry-after parsing
+        if (!response.ok) {
+          let errorBody = ""
+          try {
+            errorBody = await response.text()
+          } catch {
+            // ignore
+          }
+          throw new Error(`SSE failed: ${response.status} ${response.statusText} ${errorBody}`)
+        }
+        // kilocode_change end
 
         if (!response.body) throw new Error("No body in SSE response")
 

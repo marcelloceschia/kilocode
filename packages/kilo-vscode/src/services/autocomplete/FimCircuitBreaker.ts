@@ -30,6 +30,7 @@ export class FimCircuitBreaker {
   private backoff = MIN_BACKOFF_MS
   private blockedUntil = 0
   private lastKind: FimErrorKind = "other"
+  private probePending = false
 
   /**
    * Check whether a request should be allowed through.
@@ -41,7 +42,11 @@ export class FimCircuitBreaker {
     const now = Date.now()
     if (now >= this.blockedUntil) {
       // Backoff period expired — allow a single probe request
+      // Use probePending flag to prevent race condition where multiple
+      // callers slip through before the first probe finishes
+      if (this.probePending) return false
       this.state = "half_open"
+      this.probePending = true
       return true
     }
 
@@ -54,6 +59,7 @@ export class FimCircuitBreaker {
     this.failures = 0
     this.backoff = MIN_BACKOFF_MS
     this.lastKind = "other"
+    this.probePending = false
   }
 
   /**
@@ -70,6 +76,7 @@ export class FimCircuitBreaker {
     this.backoff = Math.min(delay * 2, MAX_BACKOFF_MS)
     this.blockedUntil = Date.now() + delay
     this.state = "open"
+    this.probePending = false
   }
 
   /** Current error kind (useful for logging/telemetry). */
