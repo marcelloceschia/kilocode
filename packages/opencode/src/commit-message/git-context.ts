@@ -235,7 +235,7 @@ export async function getGitContext(repoPath: string, selectedFiles?: string[]):
     totalDiffSize += diff.length
     files.push({ status, path: entry.path, diff })
 
-    if (totalDiffSize >= MAX_TOTAL_DIFF_SIZE) continue
+    if (totalDiffSize >= MAX_TOTAL_DIFF_SIZE) break
   }
 
   return { branch, recentCommits, files }

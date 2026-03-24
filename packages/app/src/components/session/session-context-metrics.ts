@@ -107,6 +107,8 @@ export function collectFamilyMessages(
     const children = childrenByParent.get(sid)
     if (children) queue.push(...children)
   }
+  // Sort by creation time to maintain chronological order
+  allMessages.sort((a, b) => (a.time?.created ?? 0) - (b.time?.created ?? 0))
   return allMessages
 }
 
