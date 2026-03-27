@@ -1178,12 +1178,12 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
   })
   const isTurnCopy = createMemo(() => {
     if (props.message.role !== "assistant") return false
-    // When showAssistantCopyPartID is explicitly provided, use strict matching
-    if (props.showAssistantCopyPartID !== undefined) {
+    // Only apply "always visible" behavior when showAssistantCopyPartID is explicitly a string
+    // Default consumers (undefined) get hover-only behavior like upstream
+    if (typeof props.showAssistantCopyPartID === "string") {
       return props.showAssistantCopyPartID === part().id && typeof props.message.time?.completed === "number"
     }
-    // Fallback: show turn copy for last text part of completed assistant message
-    return isLastTextPart() && typeof props.message.time?.completed === "number"
+    return false
   })
   const [copied, setCopied] = createSignal(false)
 
