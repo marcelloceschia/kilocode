@@ -1234,7 +1234,7 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
           <Markdown text={throttledText()} cacheKey={part().id} onClick={handleMarkdownClick} />
         </div>
         <Show when={showCopy()}>
-          <div data-slot="text-part-copy-wrapper" data-is-turn-copy={isTurnCopy() ? "" : undefined}>
+          <div data-slot="text-part-copy-wrapper" data-is-turn-copy>
             <Tooltip
               value={
                 copied()
