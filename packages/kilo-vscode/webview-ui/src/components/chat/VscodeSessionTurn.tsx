@@ -133,17 +133,17 @@ export const VscodeSessionTurn: Component<VscodeSessionTurnProps> = (props) => {
   )
 
   // Copy part ID — the last text part from the last assistant message
+  // Only returns a part ID when the turn is completed (not during streaming)
   const showAssistantCopyPartID = createMemo(() => {
     const msgs = assistantMessages()
-    for (let i = msgs.length - 1; i >= 0; i--) {
-      const msg = msgs[i]
-      if (!msg) continue
-      const msgParts = (data.store.part?.[msg.id] ?? emptyParts) as SDKPart[]
-      for (let j = msgParts.length - 1; j >= 0; j--) {
-        const part = msgParts[j]
-        if (!part || part.type !== "text") continue
-        if ((part as SDKPart & { text: string }).text?.trim()) return part.id
-      }
+    const lastMsg = msgs.at(-1)
+    // Only show copy button when the last assistant message is completed
+    if (!lastMsg || typeof lastMsg.time?.completed !== "number") return undefined
+    const msgParts = (data.store.part?.[lastMsg.id] ?? emptyParts) as SDKPart[]
+    for (let j = msgParts.length - 1; j >= 0; j--) {
+      const part = msgParts[j]
+      if (!part || part.type !== "text") continue
+      if ((part as SDKPart & { text: string }).text?.trim()) return part.id
     }
     return undefined
   })

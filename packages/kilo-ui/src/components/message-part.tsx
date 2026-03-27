@@ -1176,12 +1176,15 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
     if (typeof props.showAssistantCopyPartID === "string") return props.showAssistantCopyPartID === part().id
     return isLastTextPart()
   })
-  const isTurnCopy = createMemo(
-    () =>
-      props.message.role === "assistant" &&
-      props.showAssistantCopyPartID === part().id &&
-      typeof props.message.time?.completed === "number",
-  )
+  const isTurnCopy = createMemo(() => {
+    if (props.message.role !== "assistant") return false
+    // When showAssistantCopyPartID is explicitly provided, use strict matching
+    if (props.showAssistantCopyPartID !== undefined) {
+      return props.showAssistantCopyPartID === part().id && typeof props.message.time?.completed === "number"
+    }
+    // Fallback: show turn copy for last text part of completed assistant message
+    return isLastTextPart() && typeof props.message.time?.completed === "number"
+  })
   const [copied, setCopied] = createSignal(false)
 
   const handleCopy = async () => {
