@@ -1177,7 +1177,10 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
     return isLastTextPart()
   })
   const isTurnCopy = createMemo(
-    () => props.message.role === "assistant" && props.showAssistantCopyPartID === part().id,
+    () =>
+      props.message.role === "assistant" &&
+      props.showAssistantCopyPartID === part().id &&
+      typeof props.message.time?.completed === "number",
   )
   const [copied, setCopied] = createSignal(false)
 
