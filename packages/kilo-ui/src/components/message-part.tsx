@@ -1178,10 +1178,14 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
   })
   const isTurnCopy = createMemo(() => {
     if (props.message.role !== "assistant") return false
-    // Only apply "always visible" behavior when showAssistantCopyPartID is explicitly a string
-    // Default consumers (undefined) get hover-only behavior like upstream
+    // When showAssistantCopyPartID is explicitly a string, check if it matches this part
     if (typeof props.showAssistantCopyPartID === "string") {
       return props.showAssistantCopyPartID === part().id && typeof props.message.time?.completed === "number"
+    }
+    // For default consumers (undefined), show copy button on last text part when message is completed
+    // This mirrors upstream behavior where the copy button is always visible for completed turns
+    if (props.showAssistantCopyPartID === undefined && typeof props.message.time?.completed === "number") {
+      return isLastTextPart()
     }
     return false
   })
