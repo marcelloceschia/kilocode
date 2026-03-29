@@ -7,17 +7,44 @@
     margin-top: 0;
   }
 
+  /* Mirror upstream: use opacity instead of display:none so showCopy() fallback branches work.
+   * The wrapper is always rendered when showCopy() is true, and visibility is controlled by:
+   * 1. Hover state (show on hover)
+   * 2. data-is-turn-copy attribute (always visible when present) */
   [data-slot="text-part-copy-wrapper"] {
-    display: none;
+    min-height: 24px;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    will-change: opacity;
+
+    [data-component="tooltip-trigger"] {
+      display: inline-flex;
+      width: fit-content;
+    }
   }
 
-  [data-slot="text-part-copy-wrapper"][data-is-turn-copy] {
-    display: flex;
+  /* Show on hover/focus */
+  &:hover [data-slot="text-part-copy-wrapper"],
+  &:focus-within [data-slot="text-part-copy-wrapper"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
 
-    [data-component="icon-button"] {
-      width: 20px;
-      height: 20px;
-    }
+  /* Always show copy button for the final turn response */
+  [data-slot="text-part-copy-wrapper"][data-is-turn-copy] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  [data-slot="text-part-copy-wrapper"] [data-component="icon-button"] {
+    width: 20px;
+    height: 20px;
   }
 }
 
