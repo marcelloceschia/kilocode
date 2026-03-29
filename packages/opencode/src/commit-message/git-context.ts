@@ -195,6 +195,10 @@ export async function getGitContext(repoPath: string, selectedFiles?: string[]):
   const files: FileChange[] = []
   let totalDiffSize = 0
   for (const entry of raw) {
+    // Check budget at the start of the loop to avoid expensive git diff operations
+    // after the budget is exhausted
+    if (totalDiffSize >= MAX_TOTAL_DIFF_SIZE) break
+
     if (isLockFile(entry.path)) continue
     if (selected && !selected.has(entry.path)) continue
     if (files.length >= MAX_FILES) continue
@@ -234,8 +238,6 @@ export async function getGitContext(repoPath: string, selectedFiles?: string[]):
 
     totalDiffSize += diff.length
     files.push({ status, path: entry.path, diff })
-
-    if (totalDiffSize >= MAX_TOTAL_DIFF_SIZE) continue
   }
 
   return { branch, recentCommits, files }

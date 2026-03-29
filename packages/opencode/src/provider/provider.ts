@@ -1124,6 +1124,9 @@ export namespace Provider {
         const fetchFn = customFetch ?? fetch
         const opts = init ?? {}
 
+        // Store reference to user's abort signal to distinguish cancellation from timeout
+        const userSignal = opts.signal
+
         if (options["timeout"] !== undefined && options["timeout"] !== null) {
           const signals: AbortSignal[] = []
           if (opts.signal) signals.push(opts.signal)
@@ -1152,11 +1155,21 @@ export namespace Provider {
           }
         }
 
-        return fetchFn(input, {
-          ...opts,
-          // @ts-ignore see here: https://github.com/oven-sh/bun/issues/16682
-          timeout: false,
-        })
+        try {
+          return await fetchFn(input, {
+            ...opts,
+            // @ts-ignore see here: https://github.com/oven-sh/bun/issues/16682
+            timeout: false,
+          })
+        } catch (e: unknown) {
+          // If the combined signal aborted, check if it was user cancellation vs timeout
+          // When AbortSignal.any() combines signals, the first to abort sets the reason.
+          // If the user cancelled (even after timeout fired), prefer the cancellation error.
+          if (e instanceof DOMException && e.name === "TimeoutError" && userSignal?.aborted) {
+            throw new DOMException("The operation was aborted", "AbortError")
+          }
+          throw e
+        }
       }
 
       const bundledFn = BUNDLED_PROVIDERS[model.api.npm]

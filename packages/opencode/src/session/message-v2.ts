@@ -843,6 +843,19 @@ export namespace MessageV2 {
             cause: e,
           },
         ).toObject()
+      // Handle timeout errors from AbortSignal.timeout() - distinguish from user cancellation
+      case e instanceof DOMException && e.name === "TimeoutError":
+        return new MessageV2.APIError(
+          {
+            message: "Request timed out",
+            isRetryable: true,
+            metadata: {
+              type: "timeout",
+              message: e.message,
+            },
+          },
+          { cause: e },
+        ).toObject()
       case MessageV2.OutputLengthError.isInstance(e):
         return e
       case LoadAPIKeyError.isInstance(e):

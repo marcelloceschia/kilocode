@@ -107,6 +107,9 @@ export function collectFamilyMessages(
     const children = childrenByParent.get(sid)
     if (children) queue.push(...children)
   }
+  // Sort messages chronologically by creation time to ensure correct
+  // model/token totals are shown in metrics
+  allMessages.sort((a, b) => new Date(a.time.created).getTime() - new Date(b.time.created).getTime())
   return allMessages
 }
 
