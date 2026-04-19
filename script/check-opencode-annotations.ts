@@ -57,12 +57,12 @@ function isUpstreamMerge() {
     const [parents = "", subject = ""] = line.split("\t")
     const s = subject.toLowerCase()
     // Automated upstream merge script commits (script/upstream/merge.ts)
+    // Also: manual upstream merge PRs typically include an upstream release commit
     if (parents.includes(" ")) {
       if (s.startsWith("merge: upstream ")) return true
       if (s.includes("resolve merge conflict")) return true
+      if (/^release:\s*v\d+/.test(s)) return true
     }
-    // Manual upstream merge PRs typically include an upstream release commit
-    if (/^release:\s*v\d+/.test(s)) return true
     return false
   })
 }
