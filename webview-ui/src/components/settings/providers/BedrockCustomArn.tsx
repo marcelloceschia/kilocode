@@ -111,12 +111,10 @@ export const BedrockCustomArn = ({
 			<div className="text-sm text-vscode-descriptionForeground -mt-2">
 				{t("settings:providers.awsCustomArnUse")}
 				<ul className="list-disc pl-5 mt-1">
-					<li>
-						arn:aws:bedrock:eu-west-1:123456789012:inference-profile/eu.anthropic.claude-3-7-sonnet-20250219-v1:0
-					</li>
-					<li>arn:aws:bedrock:eu-west-1:995555607786:application-inference-profile/pq08tvm5w5bm</li>
-					<li>arn:aws:bedrock:us-west-2:123456789012:provisioned-model/my-provisioned-model</li>
-					<li>arn:aws:bedrock:us-east-1:123456789012:default-prompt-router/anthropic.claude:1</li>
+					<li>{t("settings:providers.awsCustomArnExampleInferenceProfile")}</li>
+					<li>{t("settings:providers.awsCustomArnExampleApplicationProfile")}</li>
+					<li>{t("settings:providers.awsCustomArnExampleProvisioned")}</li>
+					<li>{t("settings:providers.awsCustomArnExamplePromptRouter")}</li>
 				</ul>
 				{t("settings:providers.awsCustomArnDesc")}
 			</div>
