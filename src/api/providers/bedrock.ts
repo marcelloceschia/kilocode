@@ -571,7 +571,7 @@ export class AwsBedrockHandler extends BaseProvider implements SingleCompletionH
 						let invokedModel = this.getModelById(
 							invokedArnInfo.modelId as string,
 							invokedArnInfo.modelType,
-							true,
+							true, // kilocode_change: skip resolved override to use actual invoked model for cost/token calc
 						)
 						if (invokedModel) {
 							invokedModel.id = modelConfig.id

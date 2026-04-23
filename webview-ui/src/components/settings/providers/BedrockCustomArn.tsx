@@ -96,7 +96,7 @@ export const BedrockCustomArn = ({
 		) {
 			handleResolveArn()
 		}
-	}, [apiConfiguration, validation.isValid, onResolvedModelInfo, handleResolveArn])
+	}, [awsCustomArn, validation.isValid, onResolvedModelInfo, handleResolveArn])
 	// kilocode_change end
 
 	return (

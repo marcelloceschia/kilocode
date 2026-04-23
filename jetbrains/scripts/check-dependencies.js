@@ -107,6 +107,7 @@ function checkJava() {
 	const oldFormatMatch = javaVersion.match(/version "1\.(\d+)/)
 
 	let majorVersion = null
+	let majorVersion: string | null = null
 	if (newFormatMatch) {
 		majorVersion = newFormatMatch[1]
 	} else if (oldFormatMatch) {
