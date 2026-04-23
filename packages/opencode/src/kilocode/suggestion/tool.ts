@@ -63,6 +63,7 @@ export const SuggestTool = Tool.define<typeof Params, Meta, never, "suggest">(
           sessionID: ctx.sessionID,
           text: params.suggest,
           actions: params.actions,
+          blocking: false, // render above an active input; VS Code does the same
           tool: ctx.callID ? { messageID: ctx.messageID, callID: ctx.callID } : undefined,
         })
 

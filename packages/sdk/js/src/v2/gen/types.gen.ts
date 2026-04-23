@@ -494,7 +494,7 @@ export type SuggestionRequest = {
    */
   actions: Array<SuggestionAction>
   /**
-   * Whether this suggestion blocks prompt input (default: true)
+   * Whether this suggestion blocks prompt input. When unset, the TUI treats the suggestion as blocking for backwards compatibility; the built-in suggest tool always sets this to false.
    */
   blocking?: boolean
   tool?: {
